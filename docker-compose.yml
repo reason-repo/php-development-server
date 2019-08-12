@@ -1,0 +1,56 @@
+version: '3'
+services:
+   nginx:
+      image: nginx:latest
+      ports:
+         - 80:80
+         - 443:443
+      volumes:
+         - ./hosts:/etc/nginx/conf.d
+         - ./src:/var/www
+         - ./logs:/var/log/nginx
+      links:
+         - php
+      networks:
+         - dev_net
+   redis:
+      image: 'bitnami/redis:latest'
+      environment:
+         - ALLOW_EMPTY_PASSWORD=yes
+      ports:
+         - 6379:6379
+      volumes:
+         - ./redis:/bitnami/redis/data
+      networks:
+         - dev_net
+   php:
+      build: ./images/php
+      links:
+         - mysql
+         - redis
+      volumes:
+         - ./src:/var/www
+         - ./cron:/etc/cron.d
+      networks:
+         - dev_net
+   mysql:
+      image: mysql:8
+      command: --default-authentication-plugin=mysql_native_password
+      ports:
+         - 3306:3306
+      volumes:
+         - ./mysql:/var/lib/mysql
+      environment:
+         MYSQL_DATABASE: hello
+         MYSQL_USER: hello
+         MYSQL_PASSWORD: secret
+         MYSQL_ROOT_PASSWORD: secret
+      networks:
+         - dev_net
+networks:
+   dev_net:
+      driver: bridge
+      ipam:
+         driver: default
+         config:
+            - subnet: 192.168.221.0/24
